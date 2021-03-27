@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+	<button type="button" id='btn'>draw line</button>  <button type="button" id='btn2'>draw Rectangle</button> <button type="button" id='btn3'>clear</button></br/>
+    <canvas id="myCanvas" width="500" height="600" style="border: 1px solid black; margin-top: 10px;"></canvas>
+
+</body>
+<script>
+	function InitCanvas(){
+		var canvasDom = document.getElementById('myCanvas');
+		btn = document.getElementById('btn');
+		btn2 = document.getElementById('btn2');
+		btn3 = document.getElementById('btn3');
+		this.drawLineFlag = false;
+		this.drawRectangleFlag = false;
+		this.mouseDownFlag = false;
+		this.lineArr = []; //存储画的线
+		this.rectangleArr = []; //存储画的矩形
+		this.start = {}; //画线的起点
+		this.ctx = canvasDom.getContext('2d');
+        //点击画线按钮事件
+		this.drawLineBtnEvent = function(){ 
+			this.drawLineFlag = !this.drawLineFlag
+			if(this.drawLineFlag){
+				btn2.disabled = true;
+			}else{
+				btn2.disabled = false;
+			}	
+		}
+		//点击矩形按钮事件
+		this.drawRectangleBtnEvent = function(){
+			this.drawRectangleFlag = !this.drawRectangleFlag
+			if(this.drawRectangleFlag){
+				btn.disabled = true;
+			}else{
+				btn.disabled = false;
+			}	
+		}
+		//clearCanvasEvent
+		this.clearCanvasEvent = function(){
+			this.lineArr = []; //存储画的线
+			this.rectangleArr = []; //存储画的矩形
+			this.start = {}; //画线的起点
+			this.end = {};
+			this.draw();
+		}
+		btn.addEventListener('click',this.drawLineBtnEvent.bind(this),false);
+		btn2.addEventListener('click',this.drawRectangleBtnEvent.bind(this),false);
+		btn3.addEventListener('click',this.clearCanvasEvent.bind(this),false);
+		
+		/**
+		 * start 开始点
+		 * end 结束点
+		 *  
+		 **/
+		this.drawLine = function(start,end){
+			var arrowLen = 10;// 箭头长度
+			var arrowAngle = 45;//箭头与直线的夹角
+			var arrowX,arrowY;
+			var angle = (Math.atan2(start.y-end.y,start.x-end.x)*180)/Math.PI;
+			var angle1 = ((angle + arrowAngle)*Math.PI)/180;
+			var angle2 = ((angle - arrowAngle)*Math.PI)/180;
+			var topX = arrowLen*Math.cos(angle1);
+			var topY = arrowLen*Math.sin(angle1);
+			var botX = arrowLen*Math.cos(angle2);
+			var botY = arrowLen*Math.sin(angle2);
+			this.ctx.beginPath();
+			this.ctx.moveTo(start.x,start.y);
+			this.ctx.lineTo(end.x,end.y);
+			//画箭头上边部分
+			arrowX = end.x+ topX;
+			arrowY = end.y+ topY;
+			this.ctx.moveTo(arrowX,arrowY);
+			this.ctx.lineTo(end.x,end.y);
+			//画箭头下边部分
+			arrowX = end.x+ botX;
+			arrowY = end.y+ botY;
+			this.ctx.lineTo(arrowX,arrowY);
+			this.ctx.stroke();
+		}
+		
+		/**
+		 * start 开始点
+		 * end 结束点
+		 *  
+		 **/
+		this.drawRectangle = function(start,end){
+			this.ctx.strokeRect(start.x , start.y , end.x-start.x , end.y-start.y);
+		}
+		
+		//鼠标按下事件
+		this.mouseDownEvent = function(e){
+			var eventX = e.offsetX;
+			var eventY = e.offsetY;
+			if(this.drawLineFlag||this.drawRectangleFlag){
+				this.mouseDownFlag = true;
+				this.start.x = eventX;
+				this.start.y = eventY;
+			}
+
+		}
+		//鼠标移动事件
+		this.mouseMoveEvent = function(e){
+			var eventX = e.offsetX;
+			var eventY = e.offsetY;
+			if((this.drawLineFlag||this.drawRectangleFlag)&&this.mouseDownFlag){
+				this.end = {
+					x:eventX,
+					y:eventY
+				} 
+				this.draw()
+			}
+		}
+		//鼠标抬起事件
+		this.mouseUpEvent = function(e){
+			var eventX = e.offsetX;
+			var eventY = e.offsetY;
+			if((this.drawLineFlag||this.drawRectangleFlag)&&this.mouseDownFlag){
+				var end = {
+					x:eventX,
+					y:eventY
+				}
+				this.mouseDownFlag = false;
+				if(this.drawLineFlag){
+					this.lineArr.push({
+						startX:this.start.x,
+						startY:this.start.y,
+						endX:end.x,
+						endY:end.y,
+					})
+				}else if(this.drawRectangleFlag){
+					this.rectangleArr.push({
+						startX:this.start.x,
+						startY:this.start.y,
+						endX:end.x,
+						endY:end.y,
+					})
+				}
+			
+				this.draw();
+			}
+		}
+		this.draw = function(){
+			this.ctx.clearRect(0, 0, 500, 600);
+			if(this.drawLineFlag){
+				this.drawLine(this.start,this.end);
+			} else if(this.drawRectangleFlag){
+				this.drawRectangle(this.start,this.end);
+			}
+			//画之前存储过的线
+			for(var i=0,len = this.lineArr.length;i<len;i++){
+				var item = this.lineArr[i];
+				var start = {
+					x:item.startX,
+					y:item.startY
+				}
+				var end = {
+					x:item.endX,
+					y:item.endY
+				}
+				this.drawLine(start,end);
+			}
+
+			//画之前存储过的矩形
+			for(var i=0,len = this.rectangleArr.length;i<len;i++){
+				var item = this.rectangleArr[i];
+				var start = {
+					x:item.startX,
+					y:item.startY
+				}
+				var end = {
+					x:item.endX,
+					y:item.endY
+				}
+				this.drawRectangle(start,end);
+			}
+		}
+
+		
+		canvasDom.addEventListener('mousedown',this.mouseDownEvent.bind(this),false);
+		canvasDom.addEventListener('mousemove',this.mouseMoveEvent.bind(this),false);
+		canvasDom.addEventListener('mouseup',this.mouseUpEvent.bind(this),false);
+		
+	}
+	var p1 = new InitCanvas();
+</script>
+</html>
